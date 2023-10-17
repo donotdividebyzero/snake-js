@@ -5,11 +5,47 @@
                 border: 1px solid black;
               }
         </style>
+        <script>
+            (function() {
+                var onEachFrame;
+                if (window.requestAnimationFrame) {
+                   onEachFrame = function(cb) {
+                      var _cb = function() {
+                            cb();
+                         requestAnimationFrame(_cb);
+                      };
+                      _cb();
+                   };
+                } else if (window.webkitRequestAnimationFrame) {
+                   onEachFrame = function(cb) {
+                      var _cb = function() {
+                         cb();
+                         webkitRequestAnimationFrame(_cb);
+                      };
+                      _cb();
+                   };
+                } else if (window.mozRequestAnimationFrame) {
+                    onEachFrame = function(cb) {
+                        var _cb = function() {
+                            cb();
+                            mozRequestAnimationFrame(_cb);
+                        };
+                        _cb();
+                    };
+                } else {
+                    onEachFrame = function(cb) {
+                        setInterval(cb, 1000/60);
+                    };
+                }
+
+                window.onEachFrame = onEachFrame;
+            })();
+        </script>
         <canvas id="game"></canvas>
         <script type="application/javascript">
             const game = {
-                width: 1200,
-                height: 800,
+                width: 900,
+                height: 600,
                 rectSize: 10,
                 snakeColor: "rgba(0, 0, 200)",
                 appleColor: "rgb(200, 0, 0)"
@@ -40,27 +76,30 @@
                     this.ctx.fillStyle = this.color;
                     if (this.rects !== undefined) {
                         this.rects.forEach((rect) => this.ctx.fillRect(rect.x, rect.y, game.rectSize, game.rectSize));
+                    } else {
+                        console.log("there is no rects!");
                     }
                 }
             }
             
             class Snake extends Drawable {
-
                 move() {
                     if (this.rects !== undefined) {
                         if (currentDirection == Direction.Right) {
                             this.rects = this.rects.map((rect) => { 
                                 rect.x += game.rectSize; 
-                                rect.y += game.rectSize;
-
+                                if (rect.x > game.width) {
+                                    rect.x = 0;
+                                }
                                 return rect;
                             });
+                            console.log(this.rects);
                         }
                     }
                 }
             }
 
-            let apple = new Drawable(ctx, game.appleColor, [{ x: 600, y: 400}]);
+            let apple = new Drawable(ctx, game.appleColor, [{ x: game.width/2, y: game.height/2}]);
             const snake = new Snake(ctx, game.snakeColor, [
                 {x: 100, y: 100},
                 {x: 90, y: 100},
@@ -68,13 +107,12 @@
                 {x: 70, y: 100},
             ]);
 
-            const loop = () => {
-                snake.move();
+            window.onEachFrame(() => {
+                //snake.move();
+                ctx.clearRect(0,0, game.width, game.height);
                 apple.draw();
                 snake.draw();
-            };
-
-            const raf = window.requestAnimationFrame(loop);
+            });
         </script>
     </body>
 </html>
