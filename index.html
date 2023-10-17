@@ -1,0 +1,80 @@
+<html>
+    <body>
+        <style>
+              canvas {
+                border: 1px solid black;
+              }
+        </style>
+        <canvas id="game"></canvas>
+        <script type="application/javascript">
+            const game = {
+                width: 1200,
+                height: 800,
+                rectSize: 10,
+                snakeColor: "rgba(0, 0, 200)",
+                appleColor: "rgb(200, 0, 0)"
+            };
+
+            const canvas = document.querySelector("#game");
+            canvas.setAttribute("width", game.width);
+            canvas.setAttribute("height", game.height);
+            const ctx = canvas.getContext("2d");
+
+            const Direction = {
+              Up: 'Up',
+              Down: 'Down',
+              Left: 'Left',
+              Right: 'Right'
+            };
+
+            let currentDirection = Direction.Right;
+
+            class Drawable {
+                constructor(ctx, color, rects) {
+                    this.ctx = ctx;
+                    this.color = color;
+                    this.rects = rects;
+                }
+                
+                draw() {
+                    this.ctx.fillStyle = this.color;
+                    if (this.rects !== undefined) {
+                        this.rects.forEach((rect) => this.ctx.fillRect(rect.x, rect.y, game.rectSize, game.rectSize));
+                    }
+                }
+            }
+            
+            class Snake extends Drawable {
+
+                move() {
+                    if (this.rects !== undefined) {
+                        if (currentDirection == Direction.Right) {
+                            this.rects = this.rects.map((rect) => { 
+                                rect.x += game.rectSize; 
+                                rect.y += game.rectSize;
+
+                                return rect;
+                            });
+                        }
+                    }
+                }
+            }
+
+            let apple = new Drawable(ctx, game.appleColor, [{ x: 600, y: 400}]);
+            const snake = new Snake(ctx, game.snakeColor, [
+                {x: 100, y: 100},
+                {x: 90, y: 100},
+                {x: 80, y: 100},
+                {x: 70, y: 100},
+            ]);
+
+            const loop = () => {
+                snake.move();
+                apple.draw();
+                snake.draw();
+            };
+
+            const raf = window.requestAnimationFrame(loop);
+        </script>
+    </body>
+</html>
