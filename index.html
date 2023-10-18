@@ -7,39 +7,16 @@
         </style>
         <script>
             (function() {
-                var onEachFrame;
-                if (window.requestAnimationFrame) {
-                   onEachFrame = function(cb) {
-                      var _cb = function() {
-                            cb();
-                         requestAnimationFrame(_cb);
-                      };
-                      _cb();
-                   };
-                } else if (window.webkitRequestAnimationFrame) {
-                   onEachFrame = function(cb) {
-                      var _cb = function() {
-                         cb();
-                         webkitRequestAnimationFrame(_cb);
-                      };
-                      _cb();
-                   };
-                } else if (window.mozRequestAnimationFrame) {
-                    onEachFrame = function(cb) {
-                        var _cb = function() {
-                            cb();
-                            mozRequestAnimationFrame(_cb);
-                        };
-                        _cb();
+                var onEachFrame = function(cb) {
+                        setInterval(cb, 1000/25);
                     };
-                } else {
-                    onEachFrame = function(cb) {
-                        setInterval(cb, 1000/60);
-                    };
-                }
 
                 window.onEachFrame = onEachFrame;
             })();
+
+            function getRandomInt(min, max) {
+                return Math.round((Math.floor(Math.random() * max) + min) / 10) * 10
+            }
         </script>
         <canvas id="game"></canvas>
         <script type="application/javascript">
@@ -51,17 +28,18 @@
                 appleColor: "rgb(200, 0, 0)"
             };
 
-            const canvas = document.querySelector("#game");
-            canvas.setAttribute("width", game.width);
-            canvas.setAttribute("height", game.height);
-            const ctx = canvas.getContext("2d");
-
             const Direction = {
               Up: 'Up',
               Down: 'Down',
               Left: 'Left',
               Right: 'Right'
             };
+
+            const canvas = document.querySelector("#game");
+            canvas.setAttribute("width", game.width);
+            canvas.setAttribute("height", game.height);
+            const ctx = canvas.getContext("2d");
+
 
             let currentDirection = Direction.Right;
 
@@ -83,23 +61,68 @@
             }
             
             class Snake extends Drawable {
-                move() {
+                get head() {
+                    return { ...this.rects[0]};
+                }
+
+                unshiftElement() {
                     if (this.rects !== undefined) {
+                        let head = this.head;
                         if (currentDirection == Direction.Right) {
-                            this.rects = this.rects.map((rect) => { 
-                                rect.x += game.rectSize; 
-                                if (rect.x > game.width) {
-                                    rect.x = 0;
-                                }
-                                return rect;
-                            });
-                            console.log(this.rects);
+                            head.x+=game.rectSize;
+                            if (head.x > game.width) {
+                                head.x = 0;
+                            }
                         }
+                        if (currentDirection == Direction.Left) {
+                            head.x-=game.rectSize;
+                            if (head.x < 0) {
+                                head.x = game.width;
+                            }
+                        }
+                        if (currentDirection == Direction.Down) {
+                            head.y+=game.rectSize;
+                            if (head.y > game.height) {
+                                head.y = 0;
+                            }
+                        }
+                        if (currentDirection == Direction.Up) {
+                            head.y-=game.rectSize;
+                            if (head.y < 0) {
+                                head.y = game.height;
+                            }
+                        }
+
+                        this.rects.unshift(head);
                     }
+                }
+
+                addTail() {
+                    this.unshiftElement();
+                }
+
+                move() {
+                    this.addTail();
+                    this.rects.pop();
                 }
             }
 
-            let apple = new Drawable(ctx, game.appleColor, [{ x: game.width/2, y: game.height/2}]);
+            class Apple extends Drawable {
+                hasBeenEaten(snakeHead) {
+                    let head = { ...this.rects[0]};
+
+                    if (head.x == snakeHead.x && head.y == snakeHead.y) {
+                        return true;
+                    }
+
+                    return false;
+                }
+            }
+
+            const createApple = () => new Apple(ctx, game.appleColor, [{ x: getRandomInt(1, game.width - game.rectSize), y: getRandomInt(1, game.height - game.rectSize)}]);
+
+            let apple = createApple();
+
             const snake = new Snake(ctx, game.snakeColor, [
                 {x: 100, y: 100},
                 {x: 90, y: 100},
@@ -107,9 +130,33 @@
                 {x: 70, y: 100},
             ]);
 
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'ArrowUp') {
+                    if (currentDirection != Direction.Down) {
+                        currentDirection = Direction.Up;
+                    }
+                } else if (event.key === 'ArrowDown') {
+                    if (currentDirection != Direction.Up) {
+                        currentDirection = Direction.Down;
+                    }
+                } else if (event.key === 'ArrowLeft') {
+                    if (currentDirection != Direction.Right) {
+                        currentDirection = Direction.Left;
+                    }
+                } else if (event.key === 'ArrowRight') {
+                    if (currentDirection != Direction.Left) {
+                        currentDirection = Direction.Right;
+                    }
+                }
+            });
+
             window.onEachFrame(() => {
-                //snake.move();
                 ctx.clearRect(0,0, game.width, game.height);
+                snake.move();
+                if (apple.hasBeenEaten(snake.head)) {
+                    apple = createApple();
+                    snake.addTail();
+                }
                 apple.draw();
                 snake.draw();
             });
